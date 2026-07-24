@@ -9,6 +9,7 @@ import {
   parsePrNumbers,
   renderPrNode,
   renderStackHtml,
+  stackKey,
   summarizeApproval,
   summarizeCi,
   toPrStatus,
@@ -36,6 +37,25 @@ Deno.test("parsePrNumbers: falls back to bare comma/space/newline separated numb
 Deno.test("parsePrNumbers: empty/garbage input yields no numbers", () => {
   assertEquals(parsePrNumbers("no numbers here"), []);
   assertEquals(parsePrNumbers(""), []);
+});
+
+// ── stackKey ─────────────────────────────────────────────────────────────────
+
+Deno.test("stackKey: canonicalizes by numeric sort so input order doesn't matter", () => {
+  // The bug this guards: fetch stored the bundle keyed by resolved (tip→base)
+  // order while renderHtml looked it up by raw input order, so a render only
+  // found the data if the PRs were listed in the same order. Both now derive
+  // the same key from the same set.
+  const tipToBase = stackKey([25275, 25274, 25415, 25414, 25299]);
+  const baseToTip = stackKey([25299, 25414, 25415, 25274, 25275]);
+  const scrambled = stackKey([25415, 25299, 25275, 25414, 25274]);
+  assertEquals(tipToBase, baseToTip);
+  assertEquals(tipToBase, scrambled);
+  assertEquals(tipToBase, "stack-25274-25275-25299-25414-25415");
+});
+
+Deno.test("stackKey: single PR", () => {
+  assertEquals(stackKey([42]), "stack-42");
 });
 
 // ── orderStack ────────────────────────────────────────────────────────────────

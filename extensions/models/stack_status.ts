@@ -176,6 +176,17 @@ export function parsePrNumbers(input: string): number[] {
 }
 
 /**
+ * Canonical data-resource key for a set of PR numbers. Sorts numerically so the
+ * key is independent of the order the caller listed the PRs in — `fetch` and
+ * `renderHtml` (and any later reader) derive the SAME key from the same set,
+ * regardless of input order or the stack's base→tip ordering. Stack ordering is
+ * preserved inside the bundle payload; only the lookup key is canonicalized.
+ */
+export function stackKey(prNumbers: number[]): string {
+  return `stack-${[...prNumbers].sort((a, b) => a - b).join("-")}`;
+}
+
+/**
  * Order PRs bottom (base of stack) → top (tip) by chaining baseRefName to
  * another PR's headRefName. Falls back to the given input order for any PR
  * whose position in the chain can't be resolved (e.g. its base isn't another
@@ -697,7 +708,7 @@ type MethodContext = {
  */
 export const model = {
   type: "@mgreten/stack-status",
-  version: "2026.07.24.1",
+  version: "2026.07.24.2",
   globalArguments: GlobalArgsSchema,
   resources: {
     prStatus: {
@@ -793,7 +804,7 @@ export const model = {
         };
         const bundleHandle = await context.writeResource(
           "stackStatus",
-          `stack-${prNumbers.join("-")}`,
+          stackKey(prNumbers),
           bundle as unknown as Record<string, unknown>,
         );
 
@@ -851,11 +862,11 @@ export const model = {
               "This runtime does not support reading prior data — pass `bundle` directly.",
             );
           }
-          const instanceName = `stack-${prNumbers.join("-")}`;
-          const found = await context.readResource(instanceName);
+          const key = stackKey(prNumbers);
+          const found = await context.readResource(key);
           if (!found) {
             throw new Error(
-              `No stackStatus data found for instance "${instanceName}". Run fetch first.`,
+              `No stackStatus data found for stack "${key}". Run fetch first.`,
             );
           }
           bundle = found as unknown as z.infer<typeof StackStatusSchema>;
@@ -867,7 +878,7 @@ export const model = {
 
         const handle = await context.writeResource(
           "stackHtml",
-          `stack-html-${prNumbers.join("-")}`,
+          `${stackKey(prNumbers)}-html`,
           {
             repo: bundle.repo,
             renderedAt: now,
