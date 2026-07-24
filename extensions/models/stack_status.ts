@@ -708,7 +708,7 @@ type MethodContext = {
  */
 export const model = {
   type: "@mgreten/stack-status",
-  version: "2026.07.24.2",
+  version: "2026.07.24.3",
   globalArguments: GlobalArgsSchema,
   resources: {
     prStatus: {
@@ -840,9 +840,18 @@ export const model = {
         bundle: StackStatusSchema.optional().describe(
           "A stackStatus bundle to render directly, bypassing the data lookup.",
         ),
+        outFile: z.string().optional().describe(
+          "Optional filesystem path to also write the raw HTML document to, ready " +
+            "to open in a browser. The HTML is always stored as a data resource; " +
+            "this just saves the extra `swamp data get ... | jq -r .content.html` step.",
+        ),
       }),
       execute: async (
-        args: { stack?: string; bundle?: z.infer<typeof StackStatusSchema> },
+        args: {
+          stack?: string;
+          bundle?: z.infer<typeof StackStatusSchema>;
+          outFile?: string;
+        },
         context: MethodContext,
       ) => {
         let bundle = args.bundle ?? null;
@@ -886,6 +895,14 @@ export const model = {
             html,
           },
         );
+
+        // The data resource stores the HTML for pipelines, but its content is a
+        // JSON envelope — not directly openable. When outFile is given, also drop
+        // the raw document to disk so it can be opened in a browser as-is.
+        if (args.outFile) {
+          await Deno.writeTextFile(args.outFile, html);
+          context.logger.info("Wrote HTML to {path}", { path: args.outFile });
+        }
 
         context.logger.info(
           "Rendered stack flowchart for {n} PR(s) on {repo}",

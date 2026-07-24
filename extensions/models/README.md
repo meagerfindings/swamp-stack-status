@@ -69,10 +69,22 @@ swamp model method run my-stack renderHtml \
   --input-file bundle.json   # { "bundle": { ...stackStatus shape... } }
 ```
 
-Retrieve the rendered HTML and write it to a file:
+The simplest way to get an openable file is the `outFile` argument, which writes
+the raw HTML straight to disk (in addition to storing the data resource):
 
 ```bash
-swamp data get my-stack stack-html-12345-12346-12347 --json \
+swamp model method run my-stack renderHtml \
+  --input stack="12345,12346,12347" \
+  --input outFile="/tmp/stack.html"
+open /tmp/stack.html
+```
+
+The HTML is also always stored as a `stackHtml` data resource. Note its content
+is a JSON envelope — extract the `html` field rather than redirecting the raw
+`swamp data get` output (which would save the envelope, not an openable page):
+
+```bash
+swamp data get my-stack stack-12345-12346-12347-html --json \
   | jq -r '.content.html' > stack.html
 ```
 
@@ -103,6 +115,7 @@ resource per PR, each containing:
 |---|---|---|---|
 | `stack` | string | one of `stack`/`bundle` | Same input as `fetch` — used to look up the matching `stackStatus` resource. |
 | `bundle` | object | one of `stack`/`bundle` | A `stackStatus` bundle to render directly, bypassing the data lookup. |
+| `outFile` | string | no | Filesystem path to also write the raw HTML document to, ready to open in a browser. |
 
 Emits a `stackHtml` resource containing the rendered `html` string, ready to
 write to a file or serve.
