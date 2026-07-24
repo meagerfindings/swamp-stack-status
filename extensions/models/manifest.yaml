@@ -1,0 +1,18 @@
+manifestVersion: 1
+name: "@mgreten/stack-status"
+version: "2026.07.24.1"
+description: >
+  Fetches PR-stack review and CI status from GitHub via `gh` and renders it as
+  a self-contained, theme-aware HTML flowchart — for anyone using Graphite-style
+  stacked pull requests who wants a single visual snapshot of a stack's health.
+
+repository: https://github.com/meagerfindings/swamp-stack-status
+
+models:
+  - stack_status.ts
+
+additionalFiles:
+  - README.md
+  - LICENSE.txt
+
+platforms: []
